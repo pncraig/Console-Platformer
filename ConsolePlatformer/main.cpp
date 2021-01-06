@@ -19,7 +19,7 @@ int nPrevPlayerX;
 int nPrevPlayerY;
 float fPlayerVelX = 1.0f;
 float fPlayerVelY = 0.0f;
-float fPlayerJumpSpeed = 0.6f;
+float fPlayerJumpSpeed = 0.2f;
 bool bIsJumping = false;
 bool bIsTouchingGround = true;
 int nJumpTimer = 0;
@@ -58,7 +58,7 @@ int main() {
 	map1.layout += L"%              %";
 	map1.layout += L"%              %";
 	map1.layout += L"%              %";
-	map1.layout += L"%              %";
+	map1.layout += L"% %%%          %";
 	map1.layout += L"%              %";
 	map1.layout += L"%       %     @%";
 	map1.layout += L"%%%%%%%%%%%%%%%%";
@@ -80,23 +80,26 @@ int main() {
 
 		/*Move the player character -------------------------------------------------------------*/
 
-		nPrevPlayerX = (int)fPlayerX;
-		nPrevPlayerY = (int)fPlayerY;
-
-		if (GetAsyncKeyState((unsigned short)'A') & 0x8000)
+		if (GetAsyncKeyState((unsigned short)'A') & 0x8000) {
+			nPrevPlayerX = (int)fPlayerX;
 			fPlayerX -= fPlayerVelX;
-		if (GetAsyncKeyState((unsigned short)'D') & 0x8000)
-			fPlayerX += fPlayerVelX;
-		if (GetAsyncKeyState((unsigned short)'W') & 0x8000) {
-			while (nJumpTimer < nJumpLength) {
-				fPlayerVelY -= fPlayerJumpSpeed;
-				nJumpTimer++;
-			}
-		} else {
-			nJumpTimer = 0;
 		}
+		if (GetAsyncKeyState((unsigned short)'D') & 0x8000) {
+			nPrevPlayerX = (int)fPlayerX;
+			fPlayerX += fPlayerVelX;
+		}
+		if (GetAsyncKeyState((unsigned short)'W') & 0x8000) {
+			if (bIsTouchingGround) {
+				while (nJumpTimer < nJumpLength) {
+					fPlayerVelY -= fPlayerJumpSpeed;
+					nJumpTimer++;
+				}
+			}
+		} else 
+			nJumpTimer = 0;
 		
-		fPlayerY += fPlayerVelY;\
+		bIsTouchingGround = false;
+		fPlayerY += fPlayerVelY;
 		fPlayerVelY += gravity;
 
 		fPlayerY = clamp(fPlayerY, 0.0f, 14.0f);
@@ -111,8 +114,17 @@ int main() {
 					continue;
 
 				if (currentBlock == '%') {
-					
+					if ((int)fPlayerX == x) {
+						if((int)fPlayerY == y)
+							fPlayerX = (float)nPrevPlayerX;
 
+						if ((int)fPlayerY == y - 1) {
+							fPlayerVelY *= -DBL_EPSILON;
+							bIsTouchingGround = true;
+						}
+						if ((int)fPlayerY == y + 1) 
+							fPlayerVelY += 1;
+					}
 				}
 			}
 		}
@@ -120,6 +132,7 @@ int main() {
 		/*Display the game ----------------------------------------------------------------------*/
 
 		// Update the position of the player character on the map
+
 		currentMap.layout[(int)fPlayerY * currentMap.width + (int)fPlayerX] = L'O';
 		for (int x = 0; x < currentMap.width; x++) {
 			for (int y = 0; y < currentMap.height; y++) {
