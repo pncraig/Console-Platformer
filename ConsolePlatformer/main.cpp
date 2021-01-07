@@ -9,14 +9,12 @@
 using namespace std;
 
 int nScreenWidth = 120;
-int nScreenHeight = 30;
+int nScreenHeight = 40;
 
 float gravity = 0.03f;
 
 float fPlayerX;
 float fPlayerY;
-int nPrevPlayerX;
-int nPrevPlayerY;
 float fPlayerVelX = 1.0f;
 float fPlayerVelY = 0.0f;
 float fPlayerJumpSpeed = 0.2f;
@@ -24,6 +22,8 @@ bool bIsJumping = false;
 bool bIsTouchingGround = true;
 int nJumpTimer = 0;
 int nJumpLength = 3;
+
+wchar_t wcPlayerCharacter = L'O';
 
 struct map {
 	wstring layout;
@@ -70,8 +70,9 @@ int main() {
 	fPlayerX = (float)currentMap.playerStartX;
 	fPlayerY = (float)currentMap.playerStartY;
 
+
 	for (;;) {
-		this_thread::sleep_for(25ms);
+		this_thread::sleep_for(75ms);
 		// Clear the screen
 		for (int i = 0; i < nScreenWidth * nScreenHeight; i++)
 			screen[i] = L' ';
@@ -81,11 +82,9 @@ int main() {
 		/*Move the player character -------------------------------------------------------------*/
 
 		if (GetAsyncKeyState((unsigned short)'A') & 0x8000) {
-			nPrevPlayerX = (int)fPlayerX;
 			fPlayerX -= fPlayerVelX;
 		}
 		if (GetAsyncKeyState((unsigned short)'D') & 0x8000) {
-			nPrevPlayerX = (int)fPlayerX;
 			fPlayerX += fPlayerVelX;
 		}
 		if (GetAsyncKeyState((unsigned short)'W') & 0x8000) {
@@ -102,38 +101,29 @@ int main() {
 		fPlayerY += fPlayerVelY;
 		fPlayerVelY += gravity;
 
-		fPlayerY = clamp(fPlayerY, 0.0f, 14.0f);
-
 		/*Collisions ----------------------------------------------------------------------------*/
 
 		for (int x = 0; x < currentMap.width; x++) {
 			for (int y = 0; y < currentMap.height; y++) {
 				wchar_t currentBlock = currentMap.layout[y * currentMap.width + x];
-				
 				if (currentBlock == ' ')
 					continue;
 
 				if (currentBlock == '%') {
-					if ((int)fPlayerX == x) {
-						if((int)fPlayerY == y)
-							fPlayerX = (float)nPrevPlayerX;
-
-						if ((int)fPlayerY == y - 1) {
-							fPlayerVelY *= -DBL_EPSILON;
-							bIsTouchingGround = true;
-						}
-						if ((int)fPlayerY == y + 1) 
-							fPlayerVelY += 1;
-					}
+					if (fPlayerX >= (float)x && fPlayerX <= (float)x + 1.1 && fPlayerY >= (float)y && fPlayerY <= (float)y + 1.1)
+						currentMap.layout[y * currentMap.width + x] = '#';
 				}
 			}
 		}
 
+		// In case other collision detection methods fail, this will keep the player from going out of bounds
+		fPlayerX = clamp(fPlayerX, 0.0f, (float)currentMap.width - 1);
+		fPlayerY = clamp(fPlayerY, 0.0f, (float)currentMap.height - 2);
+
 		/*Display the game ----------------------------------------------------------------------*/
 
 		// Update the position of the player character on the map
-
-		currentMap.layout[(int)fPlayerY * currentMap.width + (int)fPlayerX] = L'O';
+		currentMap.layout[(int)fPlayerY * currentMap.width + (int)fPlayerX] = wcPlayerCharacter;
 		for (int x = 0; x < currentMap.width; x++) {
 			for (int y = 0; y < currentMap.height; y++) {
 				screen[y * nScreenWidth + x] = currentMap.layout[y * currentMap.width + x];
